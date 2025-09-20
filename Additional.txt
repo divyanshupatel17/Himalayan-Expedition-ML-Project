@@ -1,0 +1,22 @@
+Himalayan Data (1950-2019)
+• Peaks records: 490
+• Expedition records: 11,500+
+• Member records: 90,800+
+• Literature records: 16,100+
+https://www.himalayandatabase.com/
+https://www.kaggle.com/datasets/siddharth0935/himalayan-expeditions
+
+Himalayan Data Analysis - Graphical, Tabular
+https://public.tableau.com/app/profile/muru4340/viz/HimExpDataExp_16437668499040/HimalayanDataAnalysis?publish=yes
+
+Complete Project for Refrence - Folder[Himalayan-Expedition-main_Existing_Work]
+https://github.com/divyanshupatel17/Himalayan-Expedition/tree/main
+
+Existing Work - [mentioned in DA1 pptx]
+1. Himalayan Expeditions EDA 
+https://www.kaggle.com/code/raskoshik/himalayan-expeditions-eda
+
+2. A Century of Himalayan Expeditions, Visualized - [mentioned in Spreadsheet]
+http://medium.com/%40KingHenryMorgansDiary/%EF%B8%8Fa-century-of-himalayan-expeditions-visualized-8e2cf2456b42
+
+PPT DA1 - https://gamma.app/
