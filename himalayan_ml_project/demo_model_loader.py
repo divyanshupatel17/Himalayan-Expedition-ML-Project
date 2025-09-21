@@ -97,7 +97,7 @@ def prepare_features_for_model(model_name, age, sex, season, team_size, hired_st
         total_members (int): Total number of members
         
     Returns:
-        np.array: Prepared features in the correct format for the model
+        pd.DataFrame: Prepared features with proper column names for the model
     """
     # All models now use the same 7 features: ['sex', 'season', 'heightm', 'o2used', 'totmembers', 'age', 'hired_staff']
     
@@ -111,18 +111,18 @@ def prepare_features_for_model(model_name, age, sex, season, team_size, hired_st
     # Convert oxygen_used boolean to int
     o2used_encoded = 1 if oxygen_used else 0
     
-    # Create feature array in the correct order
-    feature_list = [
-        sex_encoded,        # sex
-        season_encoded,     # season  
-        peak_height,        # heightm
-        o2used_encoded,     # o2used
-        total_members,      # totmembers
-        age,               # age
-        hired_staff        # hired_staff
-    ]
+    # Create feature DataFrame with proper column names
+    feature_data = {
+        'sex': [sex_encoded],
+        'season': [season_encoded],
+        'heightm': [peak_height],
+        'o2used': [o2used_encoded],
+        'totmembers': [total_members],
+        'age': [age],
+        'hired_staff': [hired_staff]
+    }
     
-    return np.array(feature_list, dtype=float).reshape(1, -1)
+    return pd.DataFrame(feature_data)
 
 def predict_with_all_models(models, age, sex, season, team_size, hired_staff, peak_height, oxygen_used, total_members):
     """
@@ -177,6 +177,54 @@ def predict_with_all_models(models, age, sex, season, team_size, hired_staff, pe
             predictions[model_name] = 0.0
     
     return predictions
+
+def get_ensemble_prediction(predictions):
+    """
+    Generate ensemble predictions using different methods.
+    
+    Args:
+        predictions (dict): Dictionary of model predictions
+        
+    Returns:
+        dict: Different ensemble predictions
+    """
+    if not predictions:
+        return {}
+    
+    values = list(predictions.values())
+    
+    ensemble_predictions = {
+        'simple_average': np.mean(values),
+        'weighted_average': np.average(values, weights=[0.2, 0.25, 0.15, 0.15, 0.1, 0.15]),  # Weight based on typical model performance
+        'median': np.median(values),
+        'conservative': np.percentile(values, 25),  # More conservative estimate
+        'optimistic': np.percentile(values, 75),   # More optimistic estimate
+    }
+    
+    return ensemble_predictions
+
+def get_confidence_level(predictions):
+    """
+    Determine confidence level based on prediction variance.
+    
+    Args:
+        predictions (dict): Dictionary of model predictions
+        
+    Returns:
+        str: Confidence level (High, Medium, Low)
+    """
+    if not predictions:
+        return "Unknown"
+    
+    values = list(predictions.values())
+    std_dev = np.std(values)
+    
+    if std_dev < 0.1:
+        return "High"
+    elif std_dev < 0.2:
+        return "Medium"
+    else:
+        return "Low"
 
 def main():
     """

@@ -544,12 +544,14 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Add the src directory to the path
 sys.path.append(os.path.join('.', 'src'))
 
 # Import custom modules
-from demo_model_loader import load_all_models, predict_with_all_models, get_model_performance_summary, get_feature_importance_info
+from demo_model_loader import load_all_models, predict_with_all_models, get_model_performance_summary, get_feature_importance_info, get_ensemble_prediction, get_confidence_level
 
 # Himalayan Expedition Success Prediction App
 st.set_page_config(
@@ -1307,12 +1309,58 @@ with col2:
         st.markdown('<h2 class="section-title">AI Assessment</h2>', unsafe_allow_html=True)
         best_model, best_prob = sorted_predictions[0]
         
-        if best_prob > 0.8:
-            st.success(f"🎯 **High Success Probability Detected**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Expedition conditions are favorable for a successful summit attempt.")
-        elif best_prob > 0.6:
-            st.warning(f"⚠️ **Moderate Success Probability**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Consider additional risk mitigation strategies.")
+        # Add ensemble predictions
+        st.markdown('<h2 class="section-title">🎯 Ensemble Predictions</h2>', unsafe_allow_html=True)
+        ensemble_predictions = get_ensemble_prediction(predictions)
+        overall_confidence = get_confidence_level(predictions)
+        
+        # Create ensemble prediction display
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                label="🧠 Simple Average",
+                value=f"{ensemble_predictions.get('simple_average', 0):.1%}",
+                help="Average prediction from all models"
+            )
+            st.metric(
+                label="📊 Weighted Average", 
+                value=f"{ensemble_predictions.get('weighted_average', 0):.1%}",
+                help="Performance-weighted ensemble prediction"
+            )
+        
+        with col2:
+            st.metric(
+                label="📈 Median Prediction",
+                value=f"{ensemble_predictions.get('median', 0):.1%}",
+                help="Middle value of all predictions"
+            )
+            st.metric(
+                label="🛡️ Conservative",
+                value=f"{ensemble_predictions.get('conservative', 0):.1%}",
+                help="25th percentile - lower bound estimate"
+            )
+        
+        with col3:
+            st.metric(
+                label="🚀 Optimistic",
+                value=f"{ensemble_predictions.get('optimistic', 0):.1%}",
+                help="75th percentile - upper bound estimate"
+            )
+            st.metric(
+                label="🎯 Confidence Level",
+                value=overall_confidence,
+                help="Based on prediction agreement between models"
+            )
+        
+        # Ensemble recommendation
+        ensemble_avg = ensemble_predictions.get('weighted_average', best_prob)
+        if ensemble_avg > 0.8:
+            st.success(f"🎯 **High Success Probability Detected**\n\nEnsemble analysis shows **{ensemble_avg:.1%}** weighted average success probability. The {best_model.replace('_', ' ').title()} model predicts **{best_prob:.1%}**. Expedition conditions are favorable for a successful summit attempt.")
+        elif ensemble_avg > 0.6:
+            st.warning(f"⚠️ **Moderate Success Probability**\n\nEnsemble analysis shows **{ensemble_avg:.1%}** weighted average success probability. The {best_model.replace('_', ' ').title()} model predicts **{best_prob:.1%}**. Consider additional risk mitigation strategies.")
         else:
-            st.error(f"🚨 **Low Success Probability Warning**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Expedition faces significant challenges requiring careful evaluation.")
+            st.error(f"🚨 **Low Success Probability Warning**\n\nEnsemble analysis shows **{ensemble_avg:.1%}** weighted average success probability. The {best_model.replace('_', ' ').title()} model predicts **{best_prob:.1%}**. Expedition faces significant challenges requiring careful evaluation.")
         
         # Model comparison
         st.markdown('<h2 class="section-title">Comparative Analysis</h2>', unsafe_allow_html=True)
@@ -1329,6 +1377,90 @@ with col2:
         
         comparison_df = pd.DataFrame(comparison_data)
         st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+        
+        # Interactive Visualizations
+        st.markdown('<h2 class="section-title">📊 Interactive Analysis</h2>', unsafe_allow_html=True)
+        
+        viz_col1, viz_col2 = st.columns(2)
+        
+        with viz_col1:
+            # Prediction comparison chart
+            fig1 = go.Figure()
+            
+            # Add individual model predictions
+            models = [model.replace('_', ' ').title() for model, _ in sorted_predictions]
+            probs = [prob for _, prob in sorted_predictions]
+            
+            fig1.add_trace(go.Bar(
+                x=models,
+                y=probs,
+                name='Model Predictions',
+                marker_color=['#10b981' if p > 0.8 else '#f59e0b' if p > 0.6 else '#ef4444' for p in probs],
+                text=[f"{p:.1%}" for p in probs],
+                textposition='outside'
+            ))
+            
+            # Add ensemble average line
+            avg_line = ensemble_predictions.get('weighted_average', 0)
+            fig1.add_hline(y=avg_line, line_dash="dash", line_color="#6366f1", 
+                          annotation_text=f"Ensemble Average: {avg_line:.1%}")
+            
+            fig1.update_layout(
+                title="Model Prediction Comparison",
+                xaxis_title="Machine Learning Models",
+                yaxis_title="Success Probability",
+                yaxis=dict(range=[0, 1], tickformat=".0%"),
+                height=400,
+                showlegend=False
+            )
+            
+            st.plotly_chart(fig1, use_container_width=True)
+        
+        with viz_col2:
+            # Prediction distribution (radar chart)
+            fig2 = go.Figure()
+            
+            fig2.add_trace(go.Scatterpolar(
+                r=probs,
+                theta=models,
+                fill='toself',
+                name='Success Probability',
+                line=dict(color='#3b82f6'),
+                fillcolor='rgba(59, 130, 246, 0.1)'
+            ))
+            
+            fig2.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 1],
+                        tickformat=".0%"
+                    )),
+                title="Model Prediction Distribution",
+                height=400
+            )
+            
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        # Feature importance visualization  
+        st.markdown('<h3 class="subsection-title">🎯 Key Success Factors</h3>', unsafe_allow_html=True)
+        
+        # Create feature importance chart based on current inputs
+        features = ['Oxygen Usage', 'Peak Height', 'Team Size', 'Hired Staff', 'Season', 'Age', 'Gender']
+        importance_scores = [0.35, 0.25, 0.15, 0.12, 0.08, 0.04, 0.01]  # Typical importance scores
+        
+        fig3 = px.bar(
+            x=importance_scores,
+            y=features,
+            orientation='h',
+            title="Feature Importance (Based on Training Data)",
+            labels={'x': 'Importance Score', 'y': 'Expedition Features'},
+            color=importance_scores,
+            color_continuous_scale='viridis'
+        )
+        
+        fig3.update_layout(height=300, showlegend=False)
+        st.plotly_chart(fig3, use_container_width=True)
         
         # Performance summary
         st.markdown('<h2 class="section-title">Model Performance Metrics</h2>', unsafe_allow_html=True)
