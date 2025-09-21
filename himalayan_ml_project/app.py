@@ -1,29 +1,29 @@
-# # -*- coding: utf-8 -*-
-# import streamlit as st
-# import pandas as pd
-# import numpy as np
-# import os
-# import sys
+# -*- coding: utf-8 -*-
+import streamlit as st
+import pandas as pd
+import numpy as np
+import os
+import sys
 
-# # Add the src directory to the path
-# sys.path.append(os.path.join('.', 'src'))
+# Add the src directory to the path
+sys.path.append(os.path.join('.', 'src'))
 
-# # Import custom modules
-# from demo_model_loader import load_all_models, predict_with_all_models, get_model_performance_summary, get_feature_importance_info
+# Import custom modules
+from demo_model_loader import load_all_models, predict_with_all_models, get_model_performance_summary, get_feature_importance_info
 
-# # Himalayan Expedition Success Prediction App
-# st.set_page_config(
-#     page_title="Himalayan Expedition Success Predictor",
-#     page_icon="⛰️",
-#     layout="wide",
-#     initial_sidebar_state="expanded"
-# )
+# Himalayan Expedition Success Prediction App
+st.set_page_config(
+    page_title="Himalayan Expedition Success Predictor",
+    page_icon="⛰️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# # Professional CSS Styling
-# st.markdown("""
-# <style>
-#     /* Import Google Fonts */
-#     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+# Professional CSS Styling
+st.markdown("""
+<style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
 #     /* Global Styles */
 #     .stApp {
@@ -1188,7 +1188,7 @@ oxygen_used = st.sidebar.checkbox("Oxygen Used", value=True)
 total_members = st.sidebar.slider("Total Members", 1, 20, 5)
 
 # Add a predict button
-predict_button = st.sidebar.button("Generate AI Predictions", type="primary")
+predict_button = st.sidebar.button("Generate Predictions", type="primary")
 
 # Main content area
 col1, col2 = st.columns([1, 2])
@@ -1266,7 +1266,7 @@ with col2:
         else:
             predictions = st.session_state.predictions
         
-        st.markdown('<h2 class="section-title">AI Model Predictions</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-title">Model Predictions</h2>', unsafe_allow_html=True)
         
         # Sort predictions by probability
         sorted_predictions = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
@@ -1304,15 +1304,19 @@ with col2:
             """, unsafe_allow_html=True)
         
         # Overall recommendation
-        st.markdown('<h2 class="section-title">AI Assessment</h2>', unsafe_allow_html=True)
-        best_model, best_prob = sorted_predictions[0]
+        st.markdown('<h2 class="section-title">Overall Assessment</h2>', unsafe_allow_html=True)
         
-        if best_prob > 0.8:
-            st.success(f"🎯 **High Success Probability Detected**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Expedition conditions are favorable for a successful summit attempt.")
-        elif best_prob > 0.6:
-            st.warning(f"⚠️ **Moderate Success Probability**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Consider additional risk mitigation strategies.")
+        if sorted_predictions:
+            best_model, best_prob = sorted_predictions[0]
+            
+            if best_prob > 0.8:
+                st.success(f"High probability of success. The {best_model.replace('_', ' ').title()} model predicts a {best_prob:.1%} success probability.")
+            elif best_prob > 0.6:
+                st.warning(f"Moderate probability of success. The {best_model.replace('_', ' ').title()} model predicts a {best_prob:.1%} success probability.")
+            else:
+                st.error(f"Low probability of success. The {best_model.replace('_', ' ').title()} model predicts a {best_prob:.1%} success probability.")
         else:
-            st.error(f"🚨 **Low Success Probability Warning**\n\nThe {best_model.replace('_', ' ').title()} model predicts a **{best_prob:.1%}** success probability. Expedition faces significant challenges requiring careful evaluation.")
+            st.error("No model predictions available. Please ensure models are properly loaded.")
         
         # Model comparison
         st.markdown('<h2 class="section-title">Comparative Analysis</h2>', unsafe_allow_html=True)
@@ -1347,8 +1351,8 @@ with col2:
         st.dataframe(performance_df, use_container_width=True, hide_index=True)
         
     else:
-        st.markdown('<h2 class="section-title">AI Prediction Center</h2>', unsafe_allow_html=True)
-        st.info("🤖 **Ready for Analysis**\n\nConfigure your expedition parameters in the sidebar and click 'Generate AI Predictions' to receive comprehensive success probability analysis from our ensemble of machine learning models.")
+        st.markdown('<h2 class="section-title">Prediction Center</h2>', unsafe_allow_html=True)
+        st.info("🤖 **Ready for Analysis**\n\nConfigure your expedition parameters in the sidebar and click 'Generate Predictions' to receive comprehensive success probability analysis from our ensemble of machine learning models.")
 
 # Project Information Section
 st.markdown('<br><br>', unsafe_allow_html=True)
