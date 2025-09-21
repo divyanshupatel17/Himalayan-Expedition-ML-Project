@@ -19,6 +19,9 @@ def prepare_features(df):
     Returns:
         tuple: (X, y, encoders) Feature matrix, target vector, and encoders
     """
+    print(f"Input dataframe shape: {df.shape}")
+    print(f"Available columns: {list(df.columns)}")
+    
     # Select key features that are actually available in the dataset
     feature_columns = [
         'sex', 'season', 'heightm', 'o2used', 'totmembers'
@@ -26,6 +29,7 @@ def prepare_features(df):
     
     # Check which columns exist in the dataframe
     available_features = [col for col in feature_columns if col in df.columns]
+    print(f"Available features from base list: {available_features}")
     
     # Create feature matrix
     X = df[available_features].copy()
@@ -39,14 +43,17 @@ def prepare_features(df):
         current_year = 2023
         X['age'] = current_year - df['yob']
         X['age'] = X['age'].fillna(X['age'].median())
+        print("Added age feature")
     
     # Calculate team size features
     if 'tothired' in df.columns:
         X['hired_staff'] = df['tothired'].fillna(0)
+        print("Added hired_staff feature")
     
     # Calculate member count if not available
     if 'totmembers' not in available_features and 'totmembers' in df.columns:
         X['members'] = df['totmembers'].fillna(0)
+        print("Added members feature")
     
     # Encode categorical variables
     encoders = {}
@@ -59,9 +66,21 @@ def prepare_features(df):
             X[col] = X[col].fillna('Unknown').astype(str)
             X[col] = le.fit_transform(X[col])
             encoders[col] = le
+            print(f"Encoded {col} with {len(le.classes_)} classes: {le.classes_}")
     
     # Target variable (success)
-    y = df['success1'].fillna(False) if 'success1' in df.columns else np.random.choice([0, 1], size=len(df))
+    if 'success1' in df.columns:
+        y = df['success1'].fillna(False)
+        print(f"Target variable success1 found. Success rate: {y.mean():.2%}")
+    elif 'msuccess' in df.columns:
+        y = df['msuccess'].fillna(False)
+        print(f"Target variable msuccess found. Success rate: {y.mean():.2%}")
+    else:
+        print("Warning: No success column found, creating random target")
+        y = np.random.choice([0, 1], size=len(df))
+    
+    print(f"Final feature matrix shape: {X.shape}")
+    print(f"Features: {list(X.columns)}")
     
     return X, y, encoders
 
@@ -75,19 +94,43 @@ def save_model(model, encoders, scaler, model_name):
         scaler: Feature scaler
         model_name (str): Name of the model
     """
-    # Create saved_models directory if it doesn't exist
-    os.makedirs('../saved_models', exist_ok=True)
+    # Try multiple possible locations for saved_models directory
+    possible_paths = [
+        '../saved_models',
+        './saved_models',
+        '../notebooks/saved_models',
+        './notebooks/saved_models'
+    ]
+    
+    saved_models_dir = None
+    for path in possible_paths:
+        try:
+            os.makedirs(path, exist_ok=True)
+            # Test if we can write to this directory
+            test_file = os.path.join(path, 'test_write.tmp')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            saved_models_dir = path
+            break
+        except:
+            continue
+    
+    if saved_models_dir is None:
+        # Fallback to current directory
+        saved_models_dir = './saved_models'
+        os.makedirs(saved_models_dir, exist_ok=True)
     
     # Save model
-    joblib.dump(model, f'../saved_models/{model_name}_model.pkl')
+    joblib.dump(model, os.path.join(saved_models_dir, f'{model_name}_model.pkl'))
     
     # Save encoders
-    joblib.dump(encoders, f'../saved_models/{model_name}_encoders.pkl')
+    joblib.dump(encoders, os.path.join(saved_models_dir, f'{model_name}_encoders.pkl'))
     
     # Save scaler
-    joblib.dump(scaler, f'../saved_models/{model_name}_scaler.pkl')
+    joblib.dump(scaler, os.path.join(saved_models_dir, f'{model_name}_scaler.pkl'))
     
-    print(f"Model saved as {model_name}_model.pkl")
+    print(f"Model saved to {saved_models_dir}/{model_name}_model.pkl")
 
 def load_model(model_name):
     """

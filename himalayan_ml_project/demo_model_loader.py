@@ -83,6 +83,7 @@ def load_all_models():
 def prepare_features_for_model(model_name, age, sex, season, team_size, hired_staff, peak_height, oxygen_used, total_members):
     """
     Prepare features exactly as expected by each specific model.
+    All models now use the same 7 features based on the actual training data.
     
     Args:
         model_name (str): Name of the model
@@ -98,56 +99,30 @@ def prepare_features_for_model(model_name, age, sex, season, team_size, hired_st
     Returns:
         np.array: Prepared features in the correct format for the model
     """
-    # Create a basic feature dictionary
-    features = {
-        'age': age,
-        'sex': sex,
-        'season': season,
-        'members': team_size,  # For models that use 'members' instead of 'totmembers'
-        'hired_staff': hired_staff,
-        'heightm': peak_height,
-        'o2used': oxygen_used,
-        'totmembers': total_members
-    }
+    # All models now use the same 7 features: ['sex', 'season', 'heightm', 'o2used', 'totmembers', 'age', 'hired_staff']
     
-    # Different models expect different feature sets
-    if model_name == 'xgboost':
-        # XGBoost expects 8 features
-        feature_list = [
-            features['age'],
-            1 if features['sex'] == 'M' else 0,
-            ['Spring', 'Summer', 'Autumn', 'Winter'].index(features['season']) if features['season'] in ['Spring', 'Summer', 'Autumn', 'Winter'] else 0,
-            features['members'],
-            features['hired_staff'],
-            features['heightm'],
-            1 if features['o2used'] else 0,
-            features['totmembers']
-        ]
-        return np.array(feature_list).reshape(1, -1)
+    # Encode sex (0=F, 1=M, 2=X - but we only have M/F in input)
+    sex_encoded = 1 if sex == 'M' else 0
     
-    elif model_name == 'random_forest':
-        # Random Forest expects 5 features
-        feature_list = [
-            1 if features['sex'] == 'M' else 0,
-            ['Spring', 'Summer', 'Autumn', 'Winter'].index(features['season']) if features['season'] in ['Spring', 'Summer', 'Autumn', 'Winter'] else 0,
-            features['heightm'],
-            1 if features['o2used'] else 0,
-            features['totmembers']
-        ]
-        return np.array(feature_list).reshape(1, -1)
+    # Encode season (0=Autumn, 1=Spring, 2=Summer, 3=Winter)
+    season_mapping = {'Autumn': 0, 'Spring': 1, 'Summer': 2, 'Winter': 3}
+    season_encoded = season_mapping.get(season, 1)  # Default to Spring
     
-    else:
-        # LightGBM, CatBoost, SVM, Neural Network expect 7 features
-        feature_list = [
-            1 if features['sex'] == 'M' else 0,
-            ['Spring', 'Summer', 'Autumn', 'Winter'].index(features['season']) if features['season'] in ['Spring', 'Summer', 'Autumn', 'Winter'] else 0,
-            features['heightm'],
-            1 if features['o2used'] else 0,
-            features['totmembers'],
-            features['age'],
-            features['hired_staff']
-        ]
-        return np.array(feature_list).reshape(1, -1)
+    # Convert oxygen_used boolean to int
+    o2used_encoded = 1 if oxygen_used else 0
+    
+    # Create feature array in the correct order
+    feature_list = [
+        sex_encoded,        # sex
+        season_encoded,     # season  
+        peak_height,        # heightm
+        o2used_encoded,     # o2used
+        total_members,      # totmembers
+        age,               # age
+        hired_staff        # hired_staff
+    ]
+    
+    return np.array(feature_list, dtype=float).reshape(1, -1)
 
 def predict_with_all_models(models, age, sex, season, team_size, hired_staff, peak_height, oxygen_used, total_members):
     """

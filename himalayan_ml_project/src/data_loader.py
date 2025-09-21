@@ -25,8 +25,8 @@ def load_data():
             os.path.join(current_script_dir, '..', 'data'),  # src/../data
             os.path.join(current_script_dir, '..', '..', 'data'),  # src/../../data
             os.path.join(os.getcwd(), 'data'),  # Current directory/data
-            os.path.join(os.getcwd(), 'myProject', 'himalayan_ml_minimal', 'data'),  # Full path from workspace
-            os.path.join(os.getcwd(), 'himalayan_ml_minimal', 'data'),  # Relative path
+            os.path.join(os.getcwd(), 'myProject', 'himalayan_ml_project', 'data'),  # Full path from workspace
+            os.path.join(os.getcwd(), 'himalayan_ml_project', 'data'),  # Relative path
         ]
         
         # Try to find the data directory
